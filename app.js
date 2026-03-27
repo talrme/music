@@ -27,6 +27,13 @@
    */
   var queuePlaylistContext = null;
 
+  /** Panel visibility (also encoded in URL as showPl / showQu / showLy) */
+  var ui = {
+    showPlaylists: true,
+    showQueue: true,
+    showLyrics: false,
+  };
+
   var els = {};
 
   function $(id) {
@@ -78,15 +85,128 @@
     queuePlaylistContext = null;
   }
 
+  function parseUiParams() {
+    var params = new URLSearchParams(window.location.search);
+    return {
+      theme: params.get("theme"),
+      accent: params.get("accent"),
+      showPl: params.get("showPl"),
+      showQu: params.get("showQu"),
+      showLy: params.get("showLy"),
+    };
+  }
+
   function syncUrl() {
     var params = new URLSearchParams();
     if (state.queue.length) {
       params.set("q", state.queue.join(","));
       params.set("i", String(state.currentIndex));
     }
+    var theme = document.documentElement.getAttribute("data-theme") || "dark";
+    params.set("theme", theme);
+    var picker = $("accent-picker");
+    var hex = "8b5cf6";
+    if (picker && picker.value) {
+      hex = picker.value.replace(/^#/, "");
+    }
+    params.set("accent", hex);
+    params.set("showPl", ui.showPlaylists ? "1" : "0");
+    params.set("showQu", ui.showQueue ? "1" : "0");
+    params.set("showLy", ui.showLyrics ? "1" : "0");
     var qs = params.toString();
     var path = window.location.pathname + (qs ? "?" + qs : "");
     window.history.replaceState(null, "", path);
+  }
+
+  function applyPanelVisibility() {
+    var pl = $("panel-playlists");
+    var qu = $("panel-queue");
+    var ly = $("panel-lyrics");
+    if (pl) pl.hidden = !ui.showPlaylists;
+    if (qu) qu.hidden = !ui.showQueue;
+    if (ly) ly.hidden = !ui.showLyrics;
+  }
+
+  function syncSliderControls() {
+    var sPl = $("slider-show-pl");
+    var sQu = $("slider-show-qu");
+    var sLy = $("slider-show-ly");
+    if (sPl) {
+      sPl.value = ui.showPlaylists ? "1" : "0";
+      sPl.setAttribute("aria-valuetext", ui.showPlaylists ? "on" : "off");
+      sPl.classList.toggle("settings-slider--on", ui.showPlaylists);
+    }
+    if (sQu) {
+      sQu.value = ui.showQueue ? "1" : "0";
+      sQu.setAttribute("aria-valuetext", ui.showQueue ? "on" : "off");
+      sQu.classList.toggle("settings-slider--on", ui.showQueue);
+    }
+    if (sLy) {
+      sLy.value = ui.showLyrics ? "1" : "0";
+      sLy.setAttribute("aria-valuetext", ui.showLyrics ? "on" : "off");
+      sLy.classList.toggle("settings-slider--on", ui.showLyrics);
+    }
+  }
+
+  function applyUiPrefsFromUrlOrStorage() {
+    var p = parseUiParams();
+    var skipSync = true;
+    if (p.theme === "light" || p.theme === "dark") {
+      applyTheme(p.theme, skipSync);
+    } else {
+      var t = localStorage.getItem(STORAGE_THEME);
+      applyTheme(t === "light" || t === "dark" ? t : "dark", skipSync);
+    }
+    if (p.accent && /^[0-9a-fA-F]{6}$/.test(p.accent)) {
+      applyAccent("#" + p.accent.toLowerCase(), skipSync);
+    } else {
+      var acc = localStorage.getItem(STORAGE_ACCENT);
+      if (acc && /^#[0-9a-fA-F]{6}$/.test(acc)) {
+        applyAccent(acc, skipSync);
+      } else {
+        applyAccent("#8b5cf6", skipSync);
+      }
+    }
+    ui.showPlaylists = p.showPl !== "0";
+    ui.showQueue = p.showQu !== "0";
+    ui.showLyrics = p.showLy === "1";
+    applyPanelVisibility();
+    syncSliderControls();
+    /* syncUrl runs after catalog load so q/i are not stripped from the URL */
+  }
+
+  function resetAllDefaults() {
+    applyTheme("dark", true);
+    applyAccent("#8b5cf6", true);
+    ui.showPlaylists = true;
+    ui.showQueue = true;
+    ui.showLyrics = false;
+    applyPanelVisibility();
+    syncSliderControls();
+    if (catalog) {
+      state.queue = defaultQueueFromCatalog();
+      state.currentIndex = state.queue.length ? 0 : 0;
+      queuePlaylistContext = null;
+      renderQueue();
+      loadTrack();
+    } else {
+      state.queue = [];
+      state.currentIndex = 0;
+      $("lyrics-text").textContent = "";
+      loadTrack();
+    }
+    syncUrl();
+  }
+
+  function wireSettingsToggleRow(rowId, sliderId) {
+    var row = $(rowId);
+    var input = $(sliderId);
+    if (!row || !input) return;
+    row.addEventListener("click", function (e) {
+      if (e.target === input) return;
+      input.value = input.value === "1" ? "0" : "1";
+      input.dispatchEvent(new Event("input", { bubbles: true }));
+    });
   }
 
   function createEqIndicator(extraClass) {
@@ -135,7 +255,7 @@
       cover.removeAttribute("src");
       cover.alt = "";
       vinyl.classList.remove("vinyl--playing");
-      setLyricsAvailability(null);
+      $("lyrics-text").textContent = "";
       var heroEq = $("hero-eq");
       if (heroEq) heroEq.hidden = true;
       document.body.classList.remove("is-audio-playing");
@@ -160,7 +280,6 @@
 
     audio.src = song.audio;
     audio.load();
-    setLyricsAvailability(song);
     loadLyricsContent(song);
 
     if (!audio.paused) {
@@ -168,34 +287,22 @@
     }
   }
 
-  function setLyricsAvailability(song) {
-    var btn = els.btnLyrics;
-    if (!song) {
-      btn.hidden = true;
-      els.lyricsPanel.hidden = true;
-      return;
-    }
-    var inline = song.lyrics && String(song.lyrics).trim();
-    var file = song.lyricsFile && String(song.lyricsFile).trim();
-    var has = !!(inline || file);
-    btn.hidden = !has;
-    if (!has) {
-      els.lyricsPanel.hidden = true;
-      btn.setAttribute("aria-expanded", "false");
-    }
-  }
-
   function loadLyricsContent(song) {
-    els.lyricsText.textContent = "";
+    var pre = $("lyrics-text");
+    if (!pre) return;
+    pre.textContent = "";
     if (!song) return;
     if (song.lyrics && String(song.lyrics).trim()) {
-      els.lyricsText.textContent = song.lyrics.trim();
+      pre.textContent = song.lyrics.trim();
       return;
     }
-    if (!song.lyricsFile) return;
+    if (!song.lyricsFile) {
+      pre.textContent = "No lyrics for this track.";
+      return;
+    }
     var path = song.lyricsFile;
     if (lyricsCache.has(path)) {
-      els.lyricsText.textContent = lyricsCache.get(path);
+      pre.textContent = lyricsCache.get(path);
       return;
     }
     fetch(path)
@@ -206,11 +313,11 @@
       .then(function (text) {
         lyricsCache.set(path, text);
         if (state.queue[state.currentIndex] === song.id) {
-          els.lyricsText.textContent = text;
+          pre.textContent = text;
         }
       })
       .catch(function () {
-        els.lyricsText.textContent = "(Could not load lyrics file.)";
+        pre.textContent = "(Could not load lyrics file.)";
       });
   }
 
@@ -652,6 +759,7 @@
 
   function openSettings() {
     lastFocused = document.activeElement;
+    syncSliderControls();
     els.settingsBackdrop.hidden = false;
     els.settingsDialog.hidden = false;
     setTimeout(function () {
@@ -665,7 +773,7 @@
     if (lastFocused && lastFocused.focus) lastFocused.focus();
   }
 
-  function applyTheme(theme) {
+  function applyTheme(theme, skipSync) {
     document.documentElement.setAttribute("data-theme", theme);
     localStorage.setItem(STORAGE_THEME, theme);
     updateThemeChips();
@@ -675,13 +783,16 @@
     } else {
       meta.setAttribute("content", "#1a1a24");
     }
+    if (!skipSync) syncUrl();
   }
 
-  function applyAccent(hex) {
+  function applyAccent(hex, skipSync) {
     if (!hex || hex[0] !== "#") return;
     document.documentElement.style.setProperty("--accent", hex);
     localStorage.setItem(STORAGE_ACCENT, hex);
-    $("accent-picker").value = hex;
+    var picker = $("accent-picker");
+    if (picker) picker.value = hex;
+    if (!skipSync) syncUrl();
   }
 
   function updateThemeChips() {
@@ -690,19 +801,6 @@
     chips.forEach(function (cb) {
       cb.setAttribute("aria-pressed", cb.dataset.theme === current ? "true" : "false");
     });
-  }
-
-  function initThemeFromStorage() {
-    var t = localStorage.getItem(STORAGE_THEME);
-    if (t === "light" || t === "dark") {
-      applyTheme(t);
-    } else {
-      applyTheme("dark");
-    }
-    var acc = localStorage.getItem(STORAGE_ACCENT);
-    if (acc && /^#[0-9a-fA-F]{6}$/.test(acc)) {
-      applyAccent(acc);
-    }
   }
 
   function renderThemePresets() {
@@ -719,7 +817,7 @@
       b.textContent = opt.label;
       b.setAttribute("aria-pressed", "false");
       b.addEventListener("click", function () {
-        applyTheme(opt.id);
+        applyTheme(opt.id, false);
       });
       wrap.appendChild(b);
     });
@@ -731,9 +829,6 @@
     els.coverArt = $("cover-art");
     els.vinyl = $("vinyl");
     els.btnPlay = $("btn-play");
-    els.btnLyrics = $("btn-lyrics");
-    els.lyricsPanel = $("lyrics-panel");
-    els.lyricsText = $("lyrics-text");
     els.settingsBackdrop = $("settings-backdrop");
     els.settingsDialog = $("settings-dialog");
     els.settingsClose = $("settings-close");
@@ -757,8 +852,36 @@
         $("track-title").textContent = "Could not load catalog";
       });
 
-    initThemeFromStorage();
+    applyUiPrefsFromUrlOrStorage();
     renderThemePresets();
+
+    $("slider-show-pl").addEventListener("input", function () {
+      ui.showPlaylists = this.value === "1";
+      this.setAttribute("aria-valuetext", ui.showPlaylists ? "on" : "off");
+      this.classList.toggle("settings-slider--on", ui.showPlaylists);
+      applyPanelVisibility();
+      syncUrl();
+    });
+    $("slider-show-qu").addEventListener("input", function () {
+      ui.showQueue = this.value === "1";
+      this.setAttribute("aria-valuetext", ui.showQueue ? "on" : "off");
+      this.classList.toggle("settings-slider--on", ui.showQueue);
+      applyPanelVisibility();
+      syncUrl();
+    });
+    $("slider-show-ly").addEventListener("input", function () {
+      ui.showLyrics = this.value === "1";
+      this.setAttribute("aria-valuetext", ui.showLyrics ? "on" : "off");
+      this.classList.toggle("settings-slider--on", ui.showLyrics);
+      applyPanelVisibility();
+      syncUrl();
+    });
+
+    wireSettingsToggleRow("row-show-pl", "slider-show-pl");
+    wireSettingsToggleRow("row-show-qu", "slider-show-qu");
+    wireSettingsToggleRow("row-show-ly", "slider-show-ly");
+
+    $("btn-app-title").addEventListener("click", resetAllDefaults);
 
     document.body.addEventListener("click", function (e) {
       if (e.target.closest(".song-options")) return;
@@ -766,7 +889,7 @@
     });
 
     $("accent-picker").addEventListener("input", function () {
-      applyAccent(this.value);
+      applyAccent(this.value, false);
     });
 
     els.btnPlay.addEventListener("click", function () {
@@ -831,12 +954,6 @@
 
     $("volume").addEventListener("input", function () {
       els.audio.volume = parseFloat(this.value);
-    });
-
-    els.btnLyrics.addEventListener("click", function () {
-      var open = els.lyricsPanel.hidden;
-      els.lyricsPanel.hidden = !open;
-      els.btnLyrics.setAttribute("aria-expanded", open ? "true" : "false");
     });
 
     $("btn-settings").addEventListener("click", openSettings);

@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <title>Music</title>
+  <title>myMusic</title>
   <meta name="theme-color" content="#1a1a24" id="meta-theme-color">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -12,13 +12,12 @@
 <body>
   <div class="app">
     <header class="header">
-      <h1 class="header__title">Music</h1>
+      <button type="button" class="header__title header__title--btn" id="btn-app-title" aria-label="myMusic — reset to default settings">myMusic</button>
       <div class="header__actions">
-        <button type="button" class="btn btn--ghost" id="btn-lyrics" aria-expanded="false" aria-controls="lyrics-panel" hidden>Lyrics</button>
         <button type="button" class="btn btn--icon" id="btn-settings" aria-haspopup="dialog" aria-controls="settings-dialog" aria-label="Settings">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/>
             <circle cx="12" cy="12" r="3"/>
-            <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
           </svg>
         </button>
       </div>
@@ -77,12 +76,12 @@
         </div>
       </section>
 
-      <section class="panel panel--playlists" aria-labelledby="playlists-heading">
+      <section id="panel-playlists" class="panel panel--playlists" aria-labelledby="playlists-heading">
         <h2 id="playlists-heading" class="panel__heading panel__heading--playlists">Playlists</h2>
         <ul class="playlist-list" id="playlist-list"></ul>
       </section>
 
-      <section class="panel" aria-labelledby="queue-heading">
+      <section id="panel-queue" class="panel" aria-labelledby="queue-heading">
         <div class="panel__head">
           <h2 id="queue-heading" class="panel__heading">Queue</h2>
           <button type="button" class="btn btn--small" id="btn-copy-url">Copy link</button>
@@ -90,13 +89,14 @@
         <p class="hint" id="url-hint" role="status" aria-live="polite"></p>
         <ol class="queue-list" id="queue-list"></ol>
       </section>
-    </main>
-  </div>
 
-  <div class="lyrics-panel" id="lyrics-panel" role="region" aria-label="Lyrics" hidden>
-    <div class="lyrics-panel__inner">
-      <pre class="lyrics-panel__text" id="lyrics-text"></pre>
-    </div>
+      <section id="panel-lyrics" class="panel panel--lyrics" aria-labelledby="lyrics-heading" hidden>
+        <h2 id="lyrics-heading" class="panel__heading">Lyrics</h2>
+        <div class="lyrics-body">
+          <pre class="lyrics-body__text" id="lyrics-text"></pre>
+        </div>
+      </section>
+    </main>
   </div>
 
   <div class="modal-backdrop" id="settings-backdrop" hidden></div>
@@ -117,6 +117,23 @@
           <span>Accent color</span>
           <input type="color" id="accent-picker" value="#8b5cf6" aria-label="Accent color">
         </label>
+        <fieldset class="settings-field">
+          <legend>Panels</legend>
+          <div class="settings-slider-group">
+            <div class="settings-slider-row" id="row-show-pl">
+              <span class="settings-slider-row__label" id="label-show-pl">Show playlists</span>
+              <input type="range" class="settings-slider" id="slider-show-pl" min="0" max="1" step="1" value="1" aria-labelledby="label-show-pl" aria-valuetext="on">
+            </div>
+            <div class="settings-slider-row" id="row-show-qu">
+              <span class="settings-slider-row__label" id="label-show-qu">Show queue</span>
+              <input type="range" class="settings-slider" id="slider-show-qu" min="0" max="1" step="1" value="1" aria-labelledby="label-show-qu" aria-valuetext="on">
+            </div>
+            <div class="settings-slider-row" id="row-show-ly">
+              <span class="settings-slider-row__label" id="label-show-ly">Show lyrics</span>
+              <input type="range" class="settings-slider" id="slider-show-ly" min="0" max="1" step="1" value="0" aria-labelledby="label-show-ly" aria-valuetext="off">
+            </div>
+          </div>
+        </fieldset>
       </div>
     </div>
   </div>
