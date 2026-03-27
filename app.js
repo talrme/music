@@ -3,6 +3,9 @@
 
   var STORAGE_THEME = "music-theme";
   var STORAGE_ACCENT = "music-accent";
+  var STORAGE_QUEUE_LABEL = "music-queue-label";
+  var DEFAULT_QUEUE_LABEL = "Queue";
+  var MAX_QUEUE_LABEL_LEN = 48;
 
   var catalog = null;
   var songMap = new Map();
@@ -32,12 +35,23 @@
     showPlaylists: true,
     showQueue: true,
     showLyrics: false,
+    queueLabel: DEFAULT_QUEUE_LABEL,
   };
 
   var els = {};
 
   function $(id) {
     return document.getElementById(id);
+  }
+
+  function sanitizeQueueLabel(s) {
+    if (s == null || s === "") return DEFAULT_QUEUE_LABEL;
+    var t = String(s)
+      .replace(/[\r\n]+/g, " ")
+      .replace(/\s+/g, " ")
+      .trim()
+      .slice(0, MAX_QUEUE_LABEL_LEN);
+    return t || DEFAULT_QUEUE_LABEL;
   }
 
   function parseUrl() {
@@ -93,6 +107,7 @@
       showPl: params.get("showPl"),
       showQu: params.get("showQu"),
       showLy: params.get("showLy"),
+      qLabel: params.get("qLabel"),
     };
   }
 
@@ -113,6 +128,9 @@
     params.set("showPl", ui.showPlaylists ? "1" : "0");
     params.set("showQu", ui.showQueue ? "1" : "0");
     params.set("showLy", ui.showLyrics ? "1" : "0");
+    if (ui.queueLabel !== DEFAULT_QUEUE_LABEL) {
+      params.set("qLabel", ui.queueLabel);
+    }
     var qs = params.toString();
     var path = window.location.pathname + (qs ? "?" + qs : "");
     window.history.replaceState(null, "", path);
@@ -125,6 +143,16 @@
     if (pl) pl.hidden = !ui.showPlaylists;
     if (qu) qu.hidden = !ui.showQueue;
     if (ly) ly.hidden = !ui.showLyrics;
+  }
+
+  function applyQueueHeading() {
+    var h = $("queue-heading");
+    if (h) h.textContent = ui.queueLabel;
+  }
+
+  function syncQueueTitleInput() {
+    var inp = $("queue-title-input");
+    if (inp) inp.value = ui.queueLabel;
   }
 
   function syncSliderControls() {
@@ -170,8 +198,20 @@
     ui.showPlaylists = p.showPl !== "0";
     ui.showQueue = p.showQu !== "0";
     ui.showLyrics = p.showLy === "1";
+    if (p.qLabel != null && p.qLabel !== "") {
+      ui.queueLabel = sanitizeQueueLabel(p.qLabel);
+    } else {
+      ui.queueLabel = sanitizeQueueLabel(localStorage.getItem(STORAGE_QUEUE_LABEL));
+    }
+    if (ui.queueLabel === DEFAULT_QUEUE_LABEL) {
+      localStorage.removeItem(STORAGE_QUEUE_LABEL);
+    } else {
+      localStorage.setItem(STORAGE_QUEUE_LABEL, ui.queueLabel);
+    }
     applyPanelVisibility();
+    applyQueueHeading();
     syncSliderControls();
+    syncQueueTitleInput();
     /* syncUrl runs after catalog load so q/i are not stripped from the URL */
   }
 
@@ -181,8 +221,12 @@
     ui.showPlaylists = true;
     ui.showQueue = true;
     ui.showLyrics = false;
+    ui.queueLabel = DEFAULT_QUEUE_LABEL;
+    localStorage.removeItem(STORAGE_QUEUE_LABEL);
     applyPanelVisibility();
+    applyQueueHeading();
     syncSliderControls();
+    syncQueueTitleInput();
     if (catalog) {
       state.queue = defaultQueueFromCatalog();
       state.currentIndex = state.queue.length ? 0 : 0;
@@ -254,7 +298,7 @@
       $("track-artist").textContent = "";
       cover.removeAttribute("src");
       cover.alt = "";
-      vinyl.classList.remove("vinyl--playing");
+      vinyl.classList.remove("vinyl--disc");
       $("lyrics-text").textContent = "";
       var heroEq = $("hero-eq");
       if (heroEq) heroEq.hidden = true;
@@ -264,6 +308,8 @@
 
     var heroEqEl = $("hero-eq");
     if (heroEqEl) heroEqEl.hidden = false;
+
+    vinyl.classList.add("vinyl--disc");
 
     $("track-title").textContent = song.title || "Untitled";
     $("track-artist").textContent = song.artist || "";
@@ -327,13 +373,6 @@
     els.btnPlay.classList.toggle("is-playing", !paused);
     els.btnPlay.setAttribute("aria-label", paused ? "Play" : "Pause");
     document.body.classList.toggle("is-audio-playing", !paused);
-    if (els.vinyl) {
-      if (paused) {
-        els.vinyl.classList.remove("vinyl--playing");
-      } else {
-        els.vinyl.classList.add("vinyl--playing");
-      }
-    }
   }
 
   function updateProgress() {
@@ -744,6 +783,20 @@
 
       controls.appendChild(remove);
 
+      li.addEventListener("click", function (e) {
+        if (e.target.closest(".queue-row__drag-handle")) return;
+        if (e.target.closest(".queue-row__controls")) return;
+        queuePlaylistContext = null;
+        if (state.currentIndex !== idx) {
+          state.currentIndex = idx;
+          syncUrl();
+          renderQueue();
+          loadTrack();
+        }
+        var a = $("audio");
+        if (a) a.play().catch(function () {});
+      });
+
       li.appendChild(dragHandle);
       li.appendChild(indexSpan);
       if (eqIndicator) li.appendChild(eqIndicator);
@@ -759,7 +812,9 @@
 
   function openSettings() {
     lastFocused = document.activeElement;
+    closeQueueMenu();
     syncSliderControls();
+    syncQueueTitleInput();
     els.settingsBackdrop.hidden = false;
     els.settingsDialog.hidden = false;
     setTimeout(function () {
@@ -771,6 +826,58 @@
     els.settingsBackdrop.hidden = true;
     els.settingsDialog.hidden = true;
     if (lastFocused && lastFocused.focus) lastFocused.focus();
+  }
+
+  function closeQueueMenu() {
+    var menu = $("queue-menu");
+    var trig = $("queue-menu-trigger");
+    if (menu && !menu.hidden) {
+      menu.hidden = true;
+      if (trig) {
+        trig.setAttribute("aria-expanded", "false");
+        if (document.activeElement && menu.contains(document.activeElement)) {
+          trig.focus();
+        }
+      }
+    }
+  }
+
+  function openQueueMenu() {
+    var menu = $("queue-menu");
+    var trig = $("queue-menu-trigger");
+    if (!menu || !trig) return;
+    menu.hidden = false;
+    trig.setAttribute("aria-expanded", "true");
+    var first = menu.querySelector(".panel-menu__item");
+    if (first) first.focus();
+  }
+
+  function toggleQueueMenu() {
+    var menu = $("queue-menu");
+    if (!menu) return;
+    if (menu.hidden) {
+      openQueueMenu();
+    } else {
+      closeQueueMenu();
+    }
+  }
+
+  function copyShareLink() {
+    syncUrl();
+    var url = window.location.href;
+    $("url-hint").textContent = "";
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(url).then(
+        function () {
+          $("url-hint").textContent = "Link copied to clipboard.";
+        },
+        function () {
+          $("url-hint").textContent = url;
+        }
+      );
+    } else {
+      $("url-hint").textContent = url;
+    }
   }
 
   function applyTheme(theme, skipSync) {
@@ -877,6 +984,17 @@
       syncUrl();
     });
 
+    $("queue-title-input").addEventListener("input", function () {
+      ui.queueLabel = sanitizeQueueLabel(this.value);
+      applyQueueHeading();
+      if (ui.queueLabel === DEFAULT_QUEUE_LABEL) {
+        localStorage.removeItem(STORAGE_QUEUE_LABEL);
+      } else {
+        localStorage.setItem(STORAGE_QUEUE_LABEL, ui.queueLabel);
+      }
+      syncUrl();
+    });
+
     wireSettingsToggleRow("row-show-pl", "slider-show-pl");
     wireSettingsToggleRow("row-show-qu", "slider-show-qu");
     wireSettingsToggleRow("row-show-ly", "slider-show-ly");
@@ -886,6 +1004,9 @@
     document.body.addEventListener("click", function (e) {
       if (e.target.closest(".song-options")) return;
       closeAllSongOptionMenus();
+      if (!e.target.closest(".panel-menu")) {
+        closeQueueMenu();
+      }
     });
 
     $("accent-picker").addEventListener("input", function () {
@@ -989,22 +1110,22 @@
       }
     });
 
-    $("btn-copy-url").addEventListener("click", function () {
-      syncUrl();
-      var url = window.location.href;
-      $("url-hint").textContent = "";
-      if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(url).then(
-          function () {
-            $("url-hint").textContent = "Link copied to clipboard.";
-          },
-          function () {
-            $("url-hint").textContent = url;
-          }
-        );
-      } else {
-        $("url-hint").textContent = url;
-      }
+    $("queue-menu-trigger").addEventListener("click", function (e) {
+      e.stopPropagation();
+      toggleQueueMenu();
+    });
+
+    $("queue-menu-copy-link").addEventListener("click", function () {
+      copyShareLink();
+      closeQueueMenu();
+    });
+
+    document.addEventListener("keydown", function (e) {
+      if (e.key !== "Escape") return;
+      var menu = $("queue-menu");
+      if (!menu || menu.hidden) return;
+      e.preventDefault();
+      closeQueueMenu();
     });
 
     updatePlayButton();

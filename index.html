@@ -84,7 +84,18 @@
       <section id="panel-queue" class="panel" aria-labelledby="queue-heading">
         <div class="panel__head">
           <h2 id="queue-heading" class="panel__heading">Queue</h2>
-          <button type="button" class="btn btn--small" id="btn-copy-url">Copy link</button>
+          <div class="panel-menu">
+            <button type="button" class="btn btn--icon panel-menu__trigger" id="queue-menu-trigger" aria-haspopup="menu" aria-expanded="false" aria-controls="queue-menu" aria-label="Queue options">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                <circle cx="12" cy="6" r="2"/>
+                <circle cx="12" cy="12" r="2"/>
+                <circle cx="12" cy="18" r="2"/>
+              </svg>
+            </button>
+            <div class="panel-menu__dropdown" id="queue-menu" role="menu" hidden>
+              <button type="button" role="menuitem" class="panel-menu__item" id="queue-menu-copy-link">Copy link for sharing</button>
+            </div>
+          </div>
         </div>
         <p class="hint" id="url-hint" role="status" aria-live="polite"></p>
         <ol class="queue-list" id="queue-list"></ol>
@@ -134,6 +145,11 @@
             </div>
           </div>
         </fieldset>
+        <label class="settings-field settings-field--queue-name">
+          <span>Queue panel title</span>
+          <input type="text" id="queue-title-input" maxlength="48" autocomplete="off" placeholder="Queue" aria-describedby="queue-title-hint">
+          <span class="settings-field__hint" id="queue-title-hint">Shown above the track list. Saved in the link when you copy it.</span>
+        </label>
       </div>
     </div>
   </div>

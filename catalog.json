@@ -8,7 +8,7 @@
     ,{
       "id": "miri",
       "name": "Miri",
-      "songIds": ["demo-1"]
+      "songIds": ["we-love-miri"]
     }
     ,{
       "id": "fun",
@@ -43,6 +43,14 @@
       "title": "Colds Last for a Week",
       "artist": "Tal Green",
       "audio": "audio/colds-last-for-a-week.mp3",
+      "cover": "https://picsum.photos/seed/vinyl1/512/512",
+      "lyrics": "No Lyrics"
+    },
+    {
+      "id": "we-love-miri",
+      "title": "We Love Miri",
+      "artist": "Tal and Sophie Green",
+      "audio": "audio/we-love-miri.mp3",
       "cover": "https://picsum.photos/seed/vinyl1/512/512",
       "lyrics": "No Lyrics"
     }

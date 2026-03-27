@@ -28,10 +28,11 @@ The queue and current track are reflected in the query string:
 
 - **`q`** — comma-separated song IDs (queue order).
 - **`i`** — zero-based index of the current track in that queue.
+- Theme, accent, panel toggles, lyrics visibility, and optional **custom queue panel title** (`qLabel`) are also kept in the link when you use **Queue options → Copy link for sharing**.
 
 Example: `?q=track-a,track-b&i=0`
 
-Bookmarks and “Copy link” preserve the same queue for sharing.
+Bookmarks and that menu action preserve the same queue for sharing.
 
 ## Project layout
 

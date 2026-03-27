@@ -162,8 +162,14 @@ body {
   display: block;
 }
 
-.vinyl--playing {
+/* Spin while a track is loaded; pause freezes orientation, resume continues */
+.vinyl.vinyl--disc {
   animation: vinyl-spin 8s linear infinite;
+  animation-play-state: paused;
+}
+
+body.is-audio-playing .vinyl.vinyl--disc {
+  animation-play-state: running;
 }
 
 @keyframes vinyl-spin {
@@ -176,7 +182,7 @@ body {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .vinyl--playing {
+  .vinyl.vinyl--disc {
     animation: none;
   }
 }
@@ -529,6 +535,55 @@ body:not(.is-audio-playing) .eq-indicator--hero .eq-indicator__bar {
   margin-bottom: 0;
 }
 
+.panel-menu {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.panel-menu__dropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  min-width: 13rem;
+  padding: 0.35rem 0;
+  margin: 0;
+  list-style: none;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  z-index: 40;
+}
+
+.panel-menu__dropdown[hidden] {
+  display: none !important;
+}
+
+.panel-menu__item {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  text-align: left;
+  padding: 0.65rem 1rem;
+  font: inherit;
+  font-size: 0.9rem;
+  color: var(--text);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  border-radius: 0;
+}
+
+.panel-menu__item:hover,
+.panel-menu__item:focus {
+  background: color-mix(in srgb, var(--accent) 14%, var(--bg-elevated));
+  outline: none;
+}
+
+.panel-menu__item:focus-visible {
+  box-shadow: inset 0 0 0 2px var(--accent);
+}
+
 .hint {
   margin: 0 0 0.75rem;
   font-size: 0.85rem;
@@ -578,6 +633,7 @@ body:not(.is-audio-playing) .eq-indicator--hero .eq-indicator__bar {
   gap: 0.5rem;
   padding: 0.5rem 0;
   border-bottom: 1px solid var(--border);
+  cursor: pointer;
 }
 
 .queue-row:last-child {
@@ -1129,6 +1185,34 @@ body:not(.is-audio-playing) .eq-indicator--hero .eq-indicator__bar {
   cursor: pointer;
   padding: 2px;
   background: var(--bg);
+}
+
+.settings-field--queue-name {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.settings-field--queue-name input[type="text"] {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.6rem 0.75rem;
+  font: inherit;
+  font-size: 1rem;
+  color: var(--text);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.settings-field--queue-name input[type="text"]::placeholder {
+  color: var(--text-muted);
+}
+
+.settings-field__hint {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  line-height: 1.35;
 }
 
 .settings-slider-group {
