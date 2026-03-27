@@ -1,0 +1,50 @@
+{
+  "playlists": [
+    {
+      "id": "journal",
+      "name": "Journal",
+      "songIds": ["more-aint-more", "more-is-not-more","colds-last-for-a-week"]
+    }
+    ,{
+      "id": "miri",
+      "name": "Miri",
+      "songIds": ["demo-1"]
+    }
+    ,{
+      "id": "fun",
+      "name": "Fun",
+      "songIds": ["colds-last-for-a-week"]
+    }
+    ,{
+      "id": "other",
+      "name": "Other",
+      "songIds": ["demo-1"]
+    }
+  ],
+  "songs": [
+    {
+      "id": "more-aint-more",
+      "title": "More Ain't More",
+      "artist": "Tal Green",
+      "audio": "audio/more-aint-more.mp3",
+      "cover": "https://picsum.photos/seed/vinyl1/512/512",
+      "lyrics": "No Lyrics"
+    }
+    ,{
+      "id": "more-is-not-more",
+      "title": "More Is Not More",
+      "artist": "Tal Green",
+      "audio": "audio/more-is-not-more.mp3",
+      "cover": "https://picsum.photos/seed/vinyl1/512/512",
+      "lyrics": "No Lyrics"
+    },
+    {
+      "id": "colds-last-for-a-week",
+      "title": "Colds Last for a Week",
+      "artist": "Tal Green",
+      "audio": "audio/colds-last-for-a-week.mp3",
+      "cover": "https://picsum.photos/seed/vinyl1/512/512",
+      "lyrics": "No Lyrics"
+    }
+  ]
+}

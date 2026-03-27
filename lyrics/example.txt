@@ -1,0 +1,4 @@
+This is lyrics loaded from a file.
+
+Line two.
+Line three — you can replace this with your own .txt per song using "lyricsFile" in catalog.json.

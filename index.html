@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Music</title>
+  <meta name="theme-color" content="#1a1a24" id="meta-theme-color">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="app">
+    <header class="header">
+      <h1 class="header__title">Music</h1>
+      <div class="header__actions">
+        <button type="button" class="btn btn--ghost" id="btn-lyrics" aria-expanded="false" aria-controls="lyrics-panel" hidden>Lyrics</button>
+        <button type="button" class="btn btn--icon" id="btn-settings" aria-haspopup="dialog" aria-controls="settings-dialog" aria-label="Settings">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <circle cx="12" cy="12" r="3"/>
+            <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
+          </svg>
+        </button>
+      </div>
+    </header>
+
+    <main class="main">
+      <section class="player-section" aria-labelledby="now-playing-heading">
+        <h2 id="now-playing-heading" class="visually-hidden">Now playing</h2>
+        <div class="vinyl-wrap">
+          <div class="vinyl" id="vinyl" aria-hidden="true">
+            <div class="vinyl__groove"></div>
+            <div class="vinyl__label">
+              <img class="vinyl__art" id="cover-art" alt="" width="120" height="120" decoding="async">
+            </div>
+          </div>
+        </div>
+        <div class="track-meta">
+          <div class="track-meta__row">
+            <span class="eq-indicator eq-indicator--hero" id="hero-eq" aria-hidden="true" hidden>
+              <span class="eq-indicator__bar"></span>
+              <span class="eq-indicator__bar"></span>
+              <span class="eq-indicator__bar"></span>
+              <span class="eq-indicator__bar"></span>
+            </span>
+            <div class="track-meta__text">
+              <p class="track-meta__title" id="track-title">—</p>
+              <p class="track-meta__artist" id="track-artist"></p>
+            </div>
+          </div>
+        </div>
+
+        <div class="progress">
+          <span class="progress__time" id="time-current">0:00</span>
+          <input type="range" class="progress__range" id="seek" min="0" max="100" value="0" step="0.1" aria-label="Seek">
+          <span class="progress__time" id="time-duration">0:00</span>
+        </div>
+
+        <div class="transport">
+          <button type="button" class="btn btn--transport" id="btn-prev" aria-label="Previous track">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M6 6h2v12H6V6zm3.5 6l8.5-6v12l-8.5-6z"/></svg>
+          </button>
+          <button type="button" class="btn btn--transport btn--play" id="btn-play" aria-label="Play">
+            <span class="btn--play__icons" aria-hidden="true">
+              <svg class="icon-play" width="36" height="36" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+              <svg class="icon-pause" width="36" height="36" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+            </span>
+          </button>
+          <button type="button" class="btn btn--transport" id="btn-next" aria-label="Next track">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M16 18h2V6h-2v12zM6 6v12l8.5-6L6 6z"/></svg>
+          </button>
+        </div>
+
+        <div class="volume-row">
+          <label class="volume-row__label" for="volume">Volume</label>
+          <input type="range" class="volume-row__range" id="volume" min="0" max="1" value="1" step="0.05" aria-label="Volume">
+        </div>
+      </section>
+
+      <section class="panel panel--playlists" aria-labelledby="playlists-heading">
+        <h2 id="playlists-heading" class="panel__heading panel__heading--playlists">Playlists</h2>
+        <ul class="playlist-list" id="playlist-list"></ul>
+      </section>
+
+      <section class="panel" aria-labelledby="queue-heading">
+        <div class="panel__head">
+          <h2 id="queue-heading" class="panel__heading">Queue</h2>
+          <button type="button" class="btn btn--small" id="btn-copy-url">Copy link</button>
+        </div>
+        <p class="hint" id="url-hint" role="status" aria-live="polite"></p>
+        <ol class="queue-list" id="queue-list"></ol>
+      </section>
+    </main>
+  </div>
+
+  <div class="lyrics-panel" id="lyrics-panel" role="region" aria-label="Lyrics" hidden>
+    <div class="lyrics-panel__inner">
+      <pre class="lyrics-panel__text" id="lyrics-text"></pre>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" id="settings-backdrop" hidden></div>
+  <div class="modal" id="settings-dialog" role="dialog" aria-modal="true" aria-labelledby="settings-title" tabindex="-1" hidden>
+    <div class="modal__content">
+      <header class="modal__header">
+        <h2 id="settings-title" class="modal__title">Settings</h2>
+        <button type="button" class="btn btn--icon modal__close" id="settings-close" aria-label="Close settings">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+        </button>
+      </header>
+      <div class="modal__body">
+        <fieldset class="settings-field">
+          <legend>Color scheme</legend>
+          <div class="settings-options" id="theme-presets"></div>
+        </fieldset>
+        <label class="settings-field settings-field--accent">
+          <span>Accent color</span>
+          <input type="color" id="accent-picker" value="#8b5cf6" aria-label="Accent color">
+        </label>
+      </div>
+    </div>
+  </div>
+
+  <audio id="audio" preload="metadata"></audio>
+  <script src="app.js" defer></script>
+</body>
+</html>
