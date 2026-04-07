@@ -627,6 +627,24 @@ body:not(.is-audio-playing) .eq-indicator--hero .eq-indicator__bar {
   padding: 0;
 }
 
+.queue-list-wrap {
+  position: relative;
+}
+
+.queue-drop-line {
+  position: fixed;
+  height: 4px;
+  margin: 0;
+  padding: 0;
+  border: none;
+  border-radius: 2px;
+  background: var(--accent);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 40%, var(--bg));
+  pointer-events: none;
+  z-index: 50;
+  opacity: 0.95;
+}
+
 .queue-row {
   display: flex;
   align-items: center;

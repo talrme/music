@@ -6,6 +6,8 @@
   var STORAGE_QUEUE_LABEL = "music-queue-label";
   var DEFAULT_QUEUE_LABEL = "Queue";
   var MAX_QUEUE_LABEL_LEN = 48;
+  /** Previous button: restart current track unless within this many seconds of the start. */
+  var PREV_TRACK_RESTART_THRESHOLD_SEC = 2;
 
   var catalog = null;
   var songMap = new Map();
@@ -29,6 +31,9 @@
    * @type {string|null}
    */
   var queuePlaylistContext = null;
+
+  /** Song id last loaded into `audio` (avoids reload on reorder / remove-other when same track plays). */
+  var loadedQueueTrackId = null;
 
   /** Panel visibility (also encoded in URL as showPl / showQu / showLy) */
   var ui = {
@@ -274,7 +279,84 @@
     state.currentIndex = Math.max(0, state.queue.indexOf(currentId));
     syncUrl();
     renderQueue();
-    loadTrack();
+    loadTrack(true);
+  }
+
+  /** Mouse queue drag: tracks insert-before index for drop line + drop. */
+  var queueMouseDragState = null;
+  var queueDropLineLastKey = "";
+
+  function queueInsertBeforeFromClientY(ol, clientY) {
+    var rows = ol.querySelectorAll(".queue-row");
+    var n = rows.length;
+    if (!n) return 0;
+    for (var i = 0; i < n; i++) {
+      var r = rows[i].getBoundingClientRect();
+      var mid = (r.top + r.bottom) / 2;
+      if (clientY < mid) return i;
+    }
+    return n;
+  }
+
+  function hideQueueDropLine() {
+    var line = $("queue-drop-line");
+    if (line) line.hidden = true;
+    queueDropLineLastKey = "";
+  }
+
+  function updateQueueDropLine(from, insertBefore) {
+    var wrap = $("queue-list-wrap");
+    var line = $("queue-drop-line");
+    var ol = $("queue-list");
+    if (!wrap || !line || !ol) return;
+    var n = state.queue.length;
+    insertBefore = Math.max(0, Math.min(n, insertBefore));
+    if (insertBefore === from || insertBefore === from + 1) {
+      hideQueueDropLine();
+      return;
+    }
+    var key = from + ">" + insertBefore;
+    if (key === queueDropLineLastKey) return;
+    queueDropLineLastKey = key;
+
+    var rows = ol.querySelectorAll(".queue-row");
+    var wrect = wrap.getBoundingClientRect();
+    var pad = 10;
+    var left = wrect.left + pad;
+    var width = Math.max(0, wrect.width - pad * 2);
+    var y;
+    if (insertBefore === 0) {
+      y = rows.length ? rows[0].getBoundingClientRect().top : wrect.top;
+    } else if (insertBefore >= n) {
+      y = rows.length ? rows[n - 1].getBoundingClientRect().bottom : wrect.bottom;
+    } else {
+      var pr = rows[insertBefore - 1].getBoundingClientRect();
+      var nr = rows[insertBefore].getBoundingClientRect();
+      y = (pr.bottom + nr.top) / 2;
+    }
+    line.style.left = left + "px";
+    line.style.width = width + "px";
+    line.style.top = y + "px";
+    line.style.transform = "translateY(-50%)";
+    line.hidden = false;
+  }
+
+  function reorderQueueWithInsertBefore(from, insertBefore) {
+    var n = state.queue.length;
+    insertBefore = Math.max(0, Math.min(n, insertBefore));
+    if (insertBefore === from || insertBefore === from + 1) return;
+    var to = insertBefore < from ? insertBefore : insertBefore - 1;
+    reorderQueue(from, to);
+  }
+
+  function onQueueDragOverDocument(e) {
+    if (!queueMouseDragState) return;
+    e.preventDefault();
+    var ol = $("queue-list");
+    if (!ol) return;
+    var ib = queueInsertBeforeFromClientY(ol, e.clientY);
+    queueMouseDragState.insertBefore = ib;
+    updateQueueDropLine(queueMouseDragState.from, ib);
   }
 
   function formatTime(sec) {
@@ -284,7 +366,7 @@
     return m + ":" + (s < 10 ? "0" : "") + s;
   }
 
-  function loadTrack() {
+  function loadTrack(keepPlayingIfSameSong) {
     var id = state.queue[state.currentIndex];
     var song = id ? songMap.get(id) : null;
     var audio = els.audio;
@@ -292,6 +374,7 @@
     var vinyl = els.vinyl;
 
     if (!song) {
+      loadedQueueTrackId = null;
       audio.removeAttribute("src");
       audio.load();
       $("track-title").textContent = "—";
@@ -305,6 +388,12 @@
       document.body.classList.remove("is-audio-playing");
       return;
     }
+
+    if (keepPlayingIfSameSong && id === loadedQueueTrackId) {
+      return;
+    }
+
+    loadedQueueTrackId = id;
 
     var heroEqEl = $("hero-eq");
     if (heroEqEl) heroEqEl.hidden = false;
@@ -512,8 +601,8 @@
           var start = ids.indexOf(songId);
           if (start === -1) return;
           queuePlaylistContext = plKey;
-          state.queue = ids.slice(start);
-          state.currentIndex = 0;
+          state.queue = ids;
+          state.currentIndex = start;
           syncUrl();
           renderQueue();
           loadTrack();
@@ -636,6 +725,8 @@
       var mouseDragGhost = null;
       dragHandle.addEventListener("dragstart", function (e) {
         e.stopPropagation();
+        queueMouseDragState = { from: idx, insertBefore: idx };
+        document.addEventListener("dragover", onQueueDragOverDocument);
         try {
           e.dataTransfer.setData("text/plain", String(idx));
           e.dataTransfer.effectAllowed = "move";
@@ -660,6 +751,9 @@
         li.classList.add("queue-row--dragging-source");
       });
       dragHandle.addEventListener("dragend", function () {
+        document.removeEventListener("dragover", onQueueDragOverDocument);
+        hideQueueDropLine();
+        queueMouseDragState = null;
         if (mouseDragGhost && mouseDragGhost.parentNode) {
           mouseDragGhost.parentNode.removeChild(mouseDragGhost);
         }
@@ -676,20 +770,9 @@
           queueTouchDrag.ghost.style.left = x - queueTouchDrag.grabX + "px";
           queueTouchDrag.ghost.style.top = y - queueTouchDrag.grabY + "px";
         }
-        var el = document.elementFromPoint(x, y);
-        var row = el && el.closest ? el.closest(".queue-row") : null;
-        if (row && ol.contains(row) && row.dataset.index != null) {
-          queueTouchDrag.toIndex = parseInt(row.dataset.index, 10);
-        } else {
-          var rows = ol.querySelectorAll(".queue-row");
-          for (var ri = 0; ri < rows.length; ri++) {
-            var r = rows[ri].getBoundingClientRect();
-            if (y >= r.top && y <= r.bottom) {
-              queueTouchDrag.toIndex = parseInt(rows[ri].dataset.index, 10);
-              break;
-            }
-          }
-        }
+        var ib = queueInsertBeforeFromClientY(ol, y);
+        queueTouchDrag.insertBefore = ib;
+        updateQueueDropLine(queueTouchDrag.fromIndex, ib);
       }
 
       function queueTouchEnd() {
@@ -698,15 +781,16 @@
         document.removeEventListener("touchcancel", queueTouchEnd);
         if (queueTouchDrag) {
           var from = queueTouchDrag.fromIndex;
-          var to = queueTouchDrag.toIndex;
+          var ib = queueTouchDrag.insertBefore;
           var ghost = queueTouchDrag.ghost;
           queueTouchDrag = null;
+          hideQueueDropLine();
           if (ghost && ghost.parentNode) {
             ghost.parentNode.removeChild(ghost);
           }
           li.classList.remove("queue-row--dragging-source");
-          if (to != null && !isNaN(to) && from !== to) {
-            reorderQueue(from, to);
+          if (ib != null && !isNaN(ib)) {
+            reorderQueueWithInsertBefore(from, ib);
           }
         }
       }
@@ -732,11 +816,12 @@
           document.body.appendChild(tGhost);
           queueTouchDrag = {
             fromIndex: idx,
-            toIndex: idx,
+            insertBefore: idx,
             ghost: tGhost,
             grabX: tx - rect.left,
             grabY: ty - rect.top,
           };
+          updateQueueDropLine(idx, idx);
           li.classList.add("queue-row--dragging-source");
           document.addEventListener("touchmove", queueTouchMove, { passive: false });
           document.addEventListener("touchend", queueTouchEnd, { passive: true });
@@ -755,8 +840,12 @@
       li.addEventListener("drop", function (e) {
         e.preventDefault();
         var from = parseInt(e.dataTransfer.getData("text/plain"), 10);
-        var to = idx;
-        reorderQueue(from, to);
+        var ib =
+          queueMouseDragState && queueMouseDragState.insertBefore != null
+            ? queueMouseDragState.insertBefore
+            : queueInsertBeforeFromClientY(ol, e.clientY);
+        hideQueueDropLine();
+        reorderQueueWithInsertBefore(from, ib);
       });
 
       var indexSpan = document.createElement("span");
@@ -789,6 +878,7 @@
       remove.textContent = "×";
       remove.addEventListener("click", function () {
         var wasCurrent = idx === state.currentIndex;
+        var playingIdBefore = state.queue[state.currentIndex];
         state.queue.splice(idx, 1);
         if (!state.queue.length) {
           state.currentIndex = 0;
@@ -799,7 +889,11 @@
         }
         syncUrl();
         renderQueue();
-        loadTrack();
+        var keepPlaying =
+          !wasCurrent &&
+          state.queue.length &&
+          state.queue[state.currentIndex] === playingIdBefore;
+        loadTrack(keepPlaying);
       });
 
       controls.appendChild(remove);
@@ -1054,12 +1148,19 @@
 
     $("btn-prev").addEventListener("click", function () {
       if (!state.queue.length) return;
+      var a = els.audio;
+      var t = a.currentTime;
+      if (isFinite(t) && t > PREV_TRACK_RESTART_THRESHOLD_SEC) {
+        a.currentTime = 0;
+        updateProgress();
+        return;
+      }
       state.currentIndex =
         (state.currentIndex - 1 + state.queue.length) % state.queue.length;
       syncUrl();
       renderQueue();
       loadTrack();
-      els.audio.play().catch(function () {});
+      a.play().catch(function () {});
     });
 
     $("btn-next").addEventListener("click", function () {

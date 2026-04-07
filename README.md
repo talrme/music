@@ -49,6 +49,7 @@ Bookmarks and that menu action preserve the same queue for sharing.
 ## Features (short)
 
 - Playlists (accordion) and a **queue** with drag handles (or touch reorder on mobile).
+- **Click a playlist song** to load the **whole playlist** into the queue and **start playback on that track**.
 - **Playlist** “now playing” highlight only when the queue was started by **clicking a song** in that playlist; using **Add to queue** clears that context.
 - Dark/light theme and accent color (saved in the browser).
 - Optional lyrics panel when a song defines lyrics or a lyrics file.
