@@ -544,8 +544,7 @@
         optAdd.textContent = "Add to queue";
         optAdd.addEventListener("click", function (e) {
           e.stopPropagation();
-          optMenu.hidden = true;
-          optTrigger.setAttribute("aria-expanded", "false");
+          closeAllSongOptionMenus();
           queuePlaylistContext = null;
           state.queue.push(songId);
           syncUrl();
@@ -559,6 +558,7 @@
           var opening = optMenu.hidden;
           songList.querySelectorAll(".song-options__menu").forEach(function (m) {
             m.hidden = true;
+            clearSongOptionsMenuPosition(m);
           });
           songList.querySelectorAll(".song-options__trigger").forEach(function (t) {
             t.setAttribute("aria-expanded", "false");
@@ -566,6 +566,7 @@
           if (opening) {
             optMenu.hidden = false;
             optTrigger.setAttribute("aria-expanded", "true");
+            positionSongOptionsMenu(optMenu, optTrigger);
           }
         });
 
@@ -584,9 +585,29 @@
     });
   }
 
+  function clearSongOptionsMenuPosition(menu) {
+    menu.classList.remove("song-options__menu--fixed");
+    menu.style.top = "";
+    menu.style.right = "";
+    menu.style.left = "";
+    menu.style.bottom = "";
+    menu.style.minWidth = "";
+  }
+
+  function positionSongOptionsMenu(menu, trigger) {
+    var r = trigger.getBoundingClientRect();
+    menu.classList.add("song-options__menu--fixed");
+    menu.style.right = Math.max(8, window.innerWidth - r.right) + "px";
+    menu.style.top = r.bottom + 6 + "px";
+    menu.style.left = "auto";
+    menu.style.bottom = "auto";
+    menu.style.minWidth = "11rem";
+  }
+
   function closeAllSongOptionMenus() {
     document.querySelectorAll(".song-options__menu").forEach(function (m) {
       m.hidden = true;
+      clearSongOptionsMenuPosition(m);
     });
     document.querySelectorAll(".song-options__trigger").forEach(function (t) {
       t.setAttribute("aria-expanded", "false");
@@ -1001,6 +1022,15 @@
 
     $("btn-app-title").addEventListener("click", resetAllDefaults);
 
+    window.addEventListener("resize", closeAllSongOptionMenus);
+    window.addEventListener(
+      "scroll",
+      function () {
+        closeAllSongOptionMenus();
+      },
+      { capture: true, passive: true }
+    );
+
     document.body.addEventListener("click", function (e) {
       if (e.target.closest(".song-options")) return;
       closeAllSongOptionMenus();
@@ -1055,11 +1085,19 @@
     els.audio.addEventListener("loadedmetadata", updateProgress);
     els.audio.addEventListener("ended", function () {
       if (!state.queue.length) return;
-      state.currentIndex = (state.currentIndex + 1) % state.queue.length;
-      syncUrl();
-      renderQueue();
-      loadTrack();
-      els.audio.play().catch(function () {});
+      if (state.currentIndex >= state.queue.length - 1) {
+        state.currentIndex = 0;
+        syncUrl();
+        renderQueue();
+        loadTrack();
+        updatePlayButton();
+      } else {
+        state.currentIndex = state.currentIndex + 1;
+        syncUrl();
+        renderQueue();
+        loadTrack();
+        els.audio.play().catch(function () {});
+      }
     });
 
     $("seek").addEventListener("input", function () {

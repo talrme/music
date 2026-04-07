@@ -896,6 +896,12 @@ body:not(.is-audio-playing) .eq-indicator--hero .eq-indicator__bar {
   z-index: 40;
 }
 
+.song-options__menu.song-options__menu--fixed {
+  position: fixed;
+  margin: 0;
+  z-index: 200;
+}
+
 .song-options__item {
   display: block;
   width: 100%;
@@ -1345,7 +1351,28 @@ body:not(.is-audio-playing) .eq-indicator--hero .eq-indicator__bar {
 
   .transport {
     grid-column: 2;
-    justify-content: flex-start;
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    column-gap: 1.5rem;
+    width: 100%;
+    max-width: 420px;
+    margin: 0 auto;
+  }
+
+  .transport > *:nth-child(1) {
+    grid-column: 1;
+    justify-self: end;
+  }
+
+  .transport > *:nth-child(2) {
+    grid-column: 2;
+    justify-self: center;
+  }
+
+  .transport > *:nth-child(3) {
+    grid-column: 3;
+    justify-self: start;
   }
 
   .volume-row {
