@@ -157,6 +157,26 @@
     </div>
   </div>
 
+  <div id="art-modal-root" class="art-modal-root" hidden>
+    <div class="art-modal-root__backdrop" id="art-modal-backdrop" aria-hidden="true"></div>
+    <div
+      class="art-modal-root__shell"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="art-modal-title"
+      tabindex="-1"
+    >
+      <h2 id="art-modal-title" class="visually-hidden">Cover art</h2>
+      <div class="art-modal-root__frame">
+        <button type="button" class="art-modal-root__close btn btn--icon" id="art-modal-close" aria-label="Close cover art">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"/></svg>
+        </button>
+        <img class="art-modal-root__img" id="art-modal-img" alt="" width="1024" height="1024" decoding="async">
+      </div>
+      <p class="art-modal-root__caption" id="art-modal-caption"></p>
+    </div>
+  </div>
+
   <audio id="audio" preload="metadata"></audio>
   <script src="app.js" defer></script>
 </body>

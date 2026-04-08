@@ -35,6 +35,10 @@
   /** Song id last loaded into `audio` (avoids reload on reorder / remove-other when same track plays). */
   var loadedQueueTrackId = null;
 
+  var artModalLastFocus = null;
+  var artModalCloseTimer = null;
+  var artModalTransitionEnd = null;
+
   /** Panel visibility (also encoded in URL as showPl / showQu / showLy) */
   var ui = {
     showPlaylists: true,
@@ -640,7 +644,19 @@
           renderQueue();
         });
 
+        var optShowArt = document.createElement("button");
+        optShowArt.type = "button";
+        optShowArt.className = "song-options__item";
+        optShowArt.setAttribute("role", "menuitem");
+        optShowArt.textContent = "Show art";
+        optShowArt.addEventListener("click", function (e) {
+          e.stopPropagation();
+          closeAllSongOptionMenus();
+          openArtModal(song);
+        });
+
         optMenu.appendChild(optAdd);
+        optMenu.appendChild(optShowArt);
 
         optTrigger.addEventListener("click", function (e) {
           e.stopPropagation();
@@ -701,6 +717,92 @@
     document.querySelectorAll(".song-options__trigger").forEach(function (t) {
       t.setAttribute("aria-expanded", "false");
     });
+  }
+
+  function coverUrlForSong(song) {
+    if (song && song.cover && String(song.cover).trim()) return song.cover;
+    var seed = song && song.id ? encodeURIComponent(String(song.id)) : "vinyl1";
+    return "https://picsum.photos/seed/" + seed + "/1024/1024";
+  }
+
+  function clearArtModalCloseState(root) {
+    if (artModalCloseTimer) {
+      clearTimeout(artModalCloseTimer);
+      artModalCloseTimer = null;
+    }
+    var frame = root && root.querySelector(".art-modal-root__frame");
+    if (frame && artModalTransitionEnd) {
+      frame.removeEventListener("transitionend", artModalTransitionEnd);
+      artModalTransitionEnd = null;
+    }
+  }
+
+  function openArtModal(song) {
+    if (!song) return;
+    var root = $("art-modal-root");
+    var img = $("art-modal-img");
+    var caption = $("art-modal-caption");
+    if (!root || !img) return;
+    clearArtModalCloseState(root);
+    root.classList.remove("art-modal-root--leave");
+    root.classList.remove("art-modal-root--open");
+
+    var url = coverUrlForSong(song);
+    var cap =
+      (song.title || song.id || "Track") + (song.artist ? " — " + song.artist : "");
+    img.alt = song.title ? "Cover art: " + song.title : "Cover art";
+    img.removeAttribute("src");
+    img.src = url;
+    img.onerror = function () {
+      img.onerror = null;
+      img.src = "https://picsum.photos/seed/fallback-art/1024/1024";
+    };
+    if (caption) caption.textContent = cap;
+
+    artModalLastFocus = document.activeElement;
+    root.hidden = false;
+    void root.offsetWidth;
+    requestAnimationFrame(function () {
+      requestAnimationFrame(function () {
+        root.classList.add("art-modal-root--open");
+        var c = $("art-modal-close");
+        if (c) c.focus();
+      });
+    });
+  }
+
+  function closeArtModal() {
+    var root = $("art-modal-root");
+    if (!root || root.hidden) return;
+    clearArtModalCloseState(root);
+    root.classList.remove("art-modal-root--open");
+    root.classList.add("art-modal-root--leave");
+
+    var frame = root.querySelector(".art-modal-root__frame");
+    function finish() {
+      clearArtModalCloseState(root);
+      root.hidden = true;
+      root.classList.remove("art-modal-root--leave");
+      if (artModalLastFocus && typeof artModalLastFocus.focus === "function") {
+        try {
+          artModalLastFocus.focus();
+        } catch (err) {}
+      }
+      artModalLastFocus = null;
+    }
+
+    if (!frame) {
+      finish();
+      return;
+    }
+
+    artModalTransitionEnd = function (e) {
+      if (e.target !== frame) return;
+      if (e.propertyName !== "transform") return;
+      finish();
+    };
+    frame.addEventListener("transitionend", artModalTransitionEnd);
+    artModalCloseTimer = setTimeout(finish, 520);
   }
 
   function renderQueue() {
@@ -1126,6 +1228,10 @@
     );
 
     document.body.addEventListener("click", function (e) {
+      if (e.target.closest("#art-modal-root")) {
+        if (e.target.closest("#art-modal-backdrop")) closeArtModal();
+        return;
+      }
       if (e.target.closest(".song-options")) return;
       closeAllSongOptionMenus();
       if (!e.target.closest(".panel-menu")) {
@@ -1216,6 +1322,14 @@
       els.audio.volume = parseFloat(this.value);
     });
 
+    var artClose = $("art-modal-close");
+    if (artClose) {
+      artClose.addEventListener("click", function (e) {
+        e.stopPropagation();
+        closeArtModal();
+      });
+    }
+
     $("btn-settings").addEventListener("click", openSettings);
     els.settingsClose.addEventListener("click", closeSettings);
     els.settingsBackdrop.addEventListener("click", closeSettings);
@@ -1261,6 +1375,12 @@
 
     document.addEventListener("keydown", function (e) {
       if (e.key !== "Escape") return;
+      var artRoot = $("art-modal-root");
+      if (artRoot && !artRoot.hidden) {
+        e.preventDefault();
+        closeArtModal();
+        return;
+      }
       var menu = $("queue-menu");
       if (!menu || menu.hidden) return;
       e.preventDefault();

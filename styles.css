@@ -1403,3 +1403,144 @@ body:not(.is-audio-playing) .eq-indicator--hero .eq-indicator__bar {
     grid-column: 1 / -1;
   }
 }
+
+/* Cover art viewer (playlist ⋯ → Show art) */
+.art-modal-root {
+  position: fixed;
+  inset: 0;
+  z-index: 220;
+  display: grid;
+  place-items: center;
+  padding: 1.25rem;
+  box-sizing: border-box;
+}
+
+.art-modal-root[hidden] {
+  display: none !important;
+}
+
+.art-modal-root__backdrop {
+  position: absolute;
+  inset: 0;
+  background: color-mix(in srgb, #0a0a12 72%, var(--accent) 8%);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  opacity: 0;
+  transition: opacity 0.38s cubic-bezier(0.22, 1, 0.36, 1);
+  cursor: pointer;
+}
+
+.art-modal-root__shell {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.85rem;
+  max-width: min(92vw, 520px);
+  width: 100%;
+  pointer-events: none;
+}
+
+.art-modal-root__shell > * {
+  pointer-events: auto;
+}
+
+.art-modal-root__frame {
+  position: relative;
+  width: 100%;
+  max-height: min(78vh, 520px);
+  border-radius: 18px;
+  overflow: hidden;
+  background: var(--bg-elevated);
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--accent) 22%, transparent),
+    0 28px 90px rgba(0, 0, 0, 0.55),
+    0 0 80px color-mix(in srgb, var(--accent) 12%, transparent);
+  transform: scale(1.22) translateZ(0);
+  opacity: 0;
+  transition:
+    transform 0.48s cubic-bezier(0.2, 0.9, 0.28, 1),
+    opacity 0.36s cubic-bezier(0.22, 1, 0.36, 1);
+  transform-origin: center center;
+}
+
+.art-modal-root--open .art-modal-root__backdrop {
+  opacity: 1;
+}
+
+.art-modal-root--open .art-modal-root__frame {
+  transform: scale(1) translateZ(0);
+  opacity: 1;
+}
+
+.art-modal-root--leave .art-modal-root__backdrop {
+  opacity: 0;
+  transition: opacity 0.28s ease;
+}
+
+.art-modal-root--leave .art-modal-root__frame {
+  transform: scale(0.78) translateZ(0);
+  opacity: 0;
+  transition:
+    transform 0.34s cubic-bezier(0.55, 0, 0.85, 0.45),
+    opacity 0.26s ease;
+}
+
+.art-modal-root__img {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: min(78vh, 520px);
+  object-fit: contain;
+  background: var(--bg);
+}
+
+.art-modal-root__close {
+  position: absolute;
+  top: 0.65rem;
+  right: 0.65rem;
+  z-index: 2;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 1px solid color-mix(in srgb, var(--border) 80%, var(--accent) 15%);
+  background: color-mix(in srgb, var(--bg-elevated) 88%, transparent);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  color: var(--text);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35);
+  transition: transform 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.art-modal-root__close:hover {
+  color: var(--accent);
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
+  transform: scale(1.06);
+}
+
+.art-modal-root__close:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.art-modal-root__caption {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text);
+  text-align: center;
+  text-shadow: 0 1px 12px rgba(0, 0, 0, 0.45);
+  max-width: 100%;
+  line-height: 1.35;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .art-modal-root__backdrop,
+  .art-modal-root__frame {
+    transition-duration: 0.01ms !important;
+  }
+}

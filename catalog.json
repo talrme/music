@@ -3,7 +3,7 @@
     {
       "id": "journal",
       "name": "Journal",
-      "songIds": ["more-aint-more", "more-is-not-more"]
+      "songIds": ["more-aint-more", "more-is-not-more","next-episode-anyway"]
     }
     ,{
       "id": "miri",
@@ -13,7 +13,7 @@
     ,{
       "id": "fun",
       "name": "Fun",
-      "songIds": ["colds-last-for-a-week", "robot-week-again-broken-back"]
+      "songIds": ["colds-last-for-a-week", "robot-week-again"]
     }
     ,{
       "id": "other",
@@ -27,7 +27,7 @@
       "title": "More Ain't More",
       "artist": "Tal Green",
       "audio": "audio/more-aint-more.mp3",
-      "cover": "https://picsum.photos/seed/vinyl1/512/512",
+      "cover": "covers/more-aint-more.jpg",
       "lyrics": "No Lyrics"
     }
     ,{
@@ -35,7 +35,7 @@
       "title": "More Is Not More",
       "artist": "Tal Green",
       "audio": "audio/more-is-not-more.mp3",
-      "cover": "https://picsum.photos/seed/vinyl1/512/512",
+      "cover": "covers/more-is-not-more.jpg",
       "lyrics": "No Lyrics"
     },
     {
@@ -43,7 +43,7 @@
       "title": "Colds Last for a Week",
       "artist": "Tal Green",
       "audio": "audio/colds-last-for-a-week.mp3",
-      "cover": "https://picsum.photos/seed/vinyl1/512/512",
+      "cover": "covers/colds-last-for-a-week.jpg",
       "lyrics": "No Lyrics"
     },
     {
@@ -51,15 +51,23 @@
       "title": "We Love Miri",
       "artist": "Tal and Sophie Green",
       "audio": "audio/we-love-miri.mp3",
-      "cover": "https://picsum.photos/seed/vinyl1/512/512",
+      "cover": "covers/we-love-miri.jpg",
       "lyrics": "No Lyrics"
     },
     {
-      "id": "robot-week-again-broken-back",
-      "title": "Robot Week Again - Broken Back",
+      "id": "robot-week-again",
+      "title": "Robot Week Again",
       "artist": "Tal Green",
       "audio": "audio/robot-week-again-broken-back.mp3",
-      "cover": "https://picsum.photos/seed/vinyl1/512/512",
+      "cover": "covers/robot-week-again.jpg",
+      "lyrics": "No Lyrics"
+    }
+    ,{
+      "id": "next-episode-anyway",
+      "title": "Next Episode Anyway",
+      "artist": "Tal Green",
+      "audio": "audio/next-episode-anyway.mp3",
+      "cover": "covers/next-episode-anyway.jpg",
       "lyrics": "No Lyrics"
     }
   ]
