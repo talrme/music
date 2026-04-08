@@ -3,7 +3,7 @@
     {
       "id": "journal",
       "name": "Journal",
-      "songIds": ["more-aint-more", "more-is-not-more","next-episode-anyway"]
+      "songIds": ["more-aint-more","next-episode-anyway","more-is-not-more"]
     }
     ,{
       "id": "miri",

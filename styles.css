@@ -411,6 +411,12 @@ body:not(.is-audio-playing) .eq-indicator--hero .eq-indicator__bar {
   border: 0;
 }
 
+@media (max-width: 699px) {
+  .volume-row {
+    display: none;
+  }
+}
+
 /* Buttons */
 .btn {
   min-height: var(--tap);
@@ -1037,24 +1043,8 @@ body:not(.is-audio-playing) .eq-indicator--hero .eq-indicator__bar {
 .queue-row__controls {
   display: flex;
   flex-shrink: 0;
+  align-items: center;
   gap: 0.25rem;
-}
-
-.queue-row__btn {
-  min-width: 44px;
-  min-height: 44px;
-  padding: 0;
-  border: none;
-  background: transparent;
-  color: var(--text-muted);
-  font-size: 1.1rem;
-  cursor: pointer;
-  border-radius: 8px;
-}
-
-.queue-row__btn:hover {
-  color: var(--text);
-  background: var(--border);
 }
 
 .queue-row__index {

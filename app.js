@@ -973,12 +973,7 @@
       var controls = document.createElement("div");
       controls.className = "queue-row__controls";
 
-      var remove = document.createElement("button");
-      remove.type = "button";
-      remove.className = "queue-row__btn";
-      remove.setAttribute("aria-label", "Remove from queue");
-      remove.textContent = "×";
-      remove.addEventListener("click", function () {
+      function removeThisFromQueue() {
         var wasCurrent = idx === state.currentIndex;
         var playingIdBefore = state.queue[state.currentIndex];
         state.queue.splice(idx, 1);
@@ -996,9 +991,63 @@
           state.queue.length &&
           state.queue[state.currentIndex] === playingIdBefore;
         loadTrack(keepPlaying);
+      }
+
+      var optWrap = document.createElement("div");
+      optWrap.className = "song-options";
+      var optTrigger = document.createElement("button");
+      optTrigger.type = "button";
+      optTrigger.className = "song-options__trigger";
+      optTrigger.setAttribute("aria-label", "Queue track options");
+      optTrigger.setAttribute("aria-expanded", "false");
+      optTrigger.setAttribute("aria-haspopup", "true");
+      optTrigger.innerHTML =
+        '<svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="12" cy="6" r="1.75"/><circle cx="12" cy="12" r="1.75"/><circle cx="12" cy="18" r="1.75"/></svg>';
+
+      var optMenu = document.createElement("div");
+      optMenu.className = "song-options__menu";
+      optMenu.setAttribute("role", "menu");
+      optMenu.hidden = true;
+
+      var optRemove = document.createElement("button");
+      optRemove.type = "button";
+      optRemove.className = "song-options__item";
+      optRemove.setAttribute("role", "menuitem");
+      optRemove.textContent = "Remove from queue";
+      optRemove.addEventListener("click", function (e) {
+        e.stopPropagation();
+        closeAllSongOptionMenus();
+        removeThisFromQueue();
       });
 
-      controls.appendChild(remove);
+      var optShowArt = document.createElement("button");
+      optShowArt.type = "button";
+      optShowArt.className = "song-options__item";
+      optShowArt.setAttribute("role", "menuitem");
+      optShowArt.textContent = "Show art";
+      optShowArt.addEventListener("click", function (e) {
+        e.stopPropagation();
+        closeAllSongOptionMenus();
+        openArtModal(song || { id: id, title: id });
+      });
+
+      optMenu.appendChild(optRemove);
+      optMenu.appendChild(optShowArt);
+
+      optTrigger.addEventListener("click", function (e) {
+        e.stopPropagation();
+        var opening = optMenu.hidden;
+        closeAllSongOptionMenus();
+        if (opening) {
+          optMenu.hidden = false;
+          optTrigger.setAttribute("aria-expanded", "true");
+          positionSongOptionsMenu(optMenu, optTrigger);
+        }
+      });
+
+      optWrap.appendChild(optTrigger);
+      optWrap.appendChild(optMenu);
+      controls.appendChild(optWrap);
 
       li.addEventListener("click", function (e) {
         if (e.target.closest(".queue-row__drag-handle")) return;
